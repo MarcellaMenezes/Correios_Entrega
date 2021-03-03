@@ -4,15 +4,15 @@ import Classes.Cliente;
 import java.awt.Color;
 
 public class ViewHome extends javax.swing.JFrame {
-    Cliente client = null;
+    String  cpfCli = null;
 
     public ViewHome() {
         initComponents();
         lblExibirEnderecos.setText("<html><u>Endereços</u></html>");
     }
-    public ViewHome(Cliente client) {
+    public ViewHome(String cpfCli) {
         initComponents();
-        this.client = client;
+        this.cpfCli = cpfCli;
         lblExibirEnderecos.setText("<html><u>Endereços</u></html>");
     }
 
@@ -123,8 +123,8 @@ public class ViewHome extends javax.swing.JFrame {
 
     private void lblExibirEnderecosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblExibirEnderecosMouseClicked
         ViewEndereco viewEndereco;
-        if(client!=null){
-            viewEndereco = new ViewEndereco(client.getEnderecos());
+        if(cpfCli!=null){
+            viewEndereco = new ViewEndereco(cpfCli);
         }else{
            viewEndereco = new ViewEndereco();
         }

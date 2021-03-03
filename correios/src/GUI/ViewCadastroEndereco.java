@@ -267,7 +267,7 @@ public class ViewCadastroEndereco extends javax.swing.JFrame {
             endereco = new Endereco(identEndereco, pais, cep, rua, numero, complemento, bairro, cidade, uf);
             enderecos.add(endereco);
 
-            ViewEndereco viewEndereco = new ViewEndereco(enderecos);
+            ViewEndereco viewEndereco = new ViewEndereco();
             viewEndereco.setVisible(true);
         }
        

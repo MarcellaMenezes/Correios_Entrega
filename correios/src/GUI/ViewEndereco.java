@@ -16,7 +16,7 @@ public class ViewEndereco extends javax.swing.JFrame {
         initComponents();
     }
 
-    ViewEndereco(List<Endereco> enderecos) {
+    ViewEndereco(String cpfCli) {
         initComponents();
         this.enderecos = enderecos;
         carregarEndereco();

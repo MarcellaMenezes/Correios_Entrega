@@ -16,11 +16,12 @@ import javax.swing.JOptionPane;
 import javax.swing.text.MaskFormatter;
 
 public class ViewLogin extends javax.swing.JFrame {
-    static String senha="root", email="root@";
+    private String cpfCli=null;
     List<Login> logins;
     Cliente client = null;
-    PreparedStatement ps =  null;
-    ResultSet resultado = null;
+    PreparedStatement psQrCli =  null, psQrAdm;
+    ResultSet resultQrCli = null, resultQrAdm = null;
+    String qualTela = null;
 
     /**
      * Creates new form ViewLogin
@@ -31,34 +32,57 @@ public class ViewLogin extends javax.swing.JFrame {
         
     }
   
-    public Login verificaLogin() throws SQLException{
+    public void verificaLogin() throws SQLException{
         String email = txtEmail.getText();
         String senha = new String(pwdSenha.getPassword());
-        Login login = null;
-        
-        /*
-        ps = Conexao.getConexao().prepareStatement("SELECT * FROM login");           
-        resultado = ps.executeQuery();     
-        System.out.println("Senha: "+resultado.getString("senha")+" Email: "+resultado.getString("email"));*/
-        
-        ps = Conexao.getConexao().prepareStatement("SELECT l.codLogin, lc.fk_Cliente_cpf FROM login AS l INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");           
-        ps.setString(1, senha);
-        ps.setString(2, email);
-        
-        resultado = ps.executeQuery();
-            
-        System.out.println("Login: "+resultado.getInt("codLogin")+" Cpf Cliente: "+resultado.getString("fk_Cliente_cpf"));
-        
-        if (resultado.getString(0)!=null){
-            JOptionPane.showMessageDialog(rootPane, "E-mail ou Senha Incorretos", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
-        }else{
-                   
 
-            
-            //login = new Login(email, senha);
+        if(email.isEmpty() && senha.isEmpty()){
+            JOptionPane.showMessageDialog(rootPane, "Inisira seu e-mail e sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
+            txtEmail.requestFocus();
         }
-   
-        return login;
+        else if(email.isEmpty() && !senha.isEmpty()){
+            txtEmail.requestFocus();
+            JOptionPane.showMessageDialog(rootPane, "Insira seu e-mail", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
+        }
+        else if (!email.isEmpty() && senha.isEmpty()){
+            pwdSenha.requestFocus();
+            JOptionPane.showMessageDialog(rootPane, "Insira sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
+        }else{
+ 
+            //verificando primeiro se o login é de um ciente
+            psQrCli = Conexao.getConexao().prepareStatement("SELECT l.codLogin, lc.fk_Cliente_cpf FROM login AS l"
+                    + " INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");           
+            psQrCli.setString(1, senha);
+            psQrCli.setString(2, email);
+            resultQrCli = psQrCli.executeQuery();
+
+            //se existe cliente, pode abrir a tela de cliente
+            if(resultQrCli.next()){
+                cpfCli = resultQrCli.getString("fk_Cliente_cpf");
+                qualTela = "viewHome";
+                System.out.println("Login: "+resultQrCli.getString("codLogin")+ " Cpf Cliente: "+cpfCli);  
+            }
+            //senão, verifica se existe adm
+            else{
+                psQrAdm =  Conexao.getConexao().prepareStatement("SELECT l.codLogin, c.nomeCargo FROM login as l"
+                                                                    + " INNER JOIN login_funcionario as lf on l.codLogin = lf.fk_Login_codLogin"
+                                                                    + " INNER JOIN funcionario as f on f.fk_Cargo_codCargo = lf.fk_Login_codLogin"
+                                                                    + " INNER JOIN cargo as c on f.fk_Cargo_codCargo = c.codCargo"
+                                                                    + " WHERE l.senha = ? AND l.email = ?");
+                psQrAdm.setString(1, senha);
+                psQrAdm.setString(2, email);
+                resultQrAdm = psQrAdm.executeQuery();
+                //se existe adm, abre a tela de admn
+                if(resultQrAdm.next()){
+                    System.out.println("Login: "+resultQrAdm.getString("codLogin")+ "Nome Cargo: "+resultQrAdm.getString("nomeCargo"));
+                    if(resultQrAdm.getString("nomeCargo").equals("Administrador")){
+                        qualTela = "viewHomeFuncionario";
+                    }
+                }   
+            }
+            
+        }
+           
     }
 
     /**
@@ -193,25 +217,31 @@ public class ViewLogin extends javax.swing.JFrame {
     }//GEN-LAST:event_lblCadastrarMouseExited
 
     private void btnEntrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntrarActionPerformed
-       ViewHome viewHome;
-        if(client!=null){
-            viewHome = new ViewHome(client);
-        }else{
-            viewHome = new ViewHome();
-        }
+
         try {
-            if(verificaLogin()!=null){
-                this.dispose();
-                if(email.equals("root@") && senha.equals("root")){
-                    ViewHomeFuncionario vHomeFunc = new ViewHomeFuncionario();
-                    vHomeFunc.setVisible(true);
-                }else{
-                    viewHome.setVisible(true);  
-                }
-            }
+            verificaLogin();
         } catch (SQLException ex) {
             Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
         }
+        if(qualTela!=null){
+            if(qualTela.equals("viewHome")){
+               ViewHome vHome = null; 
+            try {
+                vHome = new ViewHome(resultQrCli.getString("fk_Cliente_cpf"));
+            } catch (SQLException ex) {
+                Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
+            }
+               vHome.setVisible(true);
+            }
+            else if(qualTela.equals("viewHomeFuncionario")){
+                ViewHomeFuncionario vHomeFunc = new ViewHomeFuncionario();
+                vHomeFunc.setVisible(true);
+            }else{
+                JOptionPane.showMessageDialog(rootPane, "E-mail ou Senha Incorretos", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
+            } 
+        }
+           
+      
     }//GEN-LAST:event_btnEntrarActionPerformed
 
     private void lblCadastrarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCadastrarMouseClicked
