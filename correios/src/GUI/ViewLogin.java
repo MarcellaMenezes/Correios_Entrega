@@ -19,7 +19,7 @@ public class ViewLogin extends javax.swing.JFrame {
     private String cpfCli=null;
     List<Login> logins;
     Cliente client = null;
-    PreparedStatement psQrCli =  null, psQrAdm;
+    PreparedStatement psQrCli =  null, psQrAdm = null;
     ResultSet resultQrCli = null, resultQrAdm = null;
     String qualTela = null;
 
@@ -232,10 +232,12 @@ public class ViewLogin extends javax.swing.JFrame {
                 Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
             }
                vHome.setVisible(true);
+               this.dispose();
             }
             else if(qualTela.equals("viewHomeFuncionario")){
                 ViewHomeFuncionario vHomeFunc = new ViewHomeFuncionario();
                 vHomeFunc.setVisible(true);
+                this.dispose();
             }else{
                 JOptionPane.showMessageDialog(rootPane, "E-mail ou Senha Incorretos", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
             } 

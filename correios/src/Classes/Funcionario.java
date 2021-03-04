@@ -3,21 +3,21 @@ package Classes;
 import java.util.Date;
 
 public abstract class Funcionario extends Usuario {
-    private int codigo;
+    private int codigoCargo;
     private String cargo;
     
-    public Funcionario(String cpf, String nome, Date dataNascimento, char sexo, int codigo, String cargo) {
+    public Funcionario(String cpf, String nome, Date dataNascimento, char sexo, int codigoCargo, String cargo) {
         super(cpf, nome, dataNascimento, sexo);
-        this.codigo = codigo;
+        this.codigoCargo = codigoCargo;
         this.cargo = cargo;
     }
 
-    public int getCodigo() {
-        return codigo;
+    public int getCodigoCargo() {
+        return codigoCargo;
     }
 
-    public void setCodigo(int codigo) {
-        this.codigo = codigo;
+    public void setCodigoCargo(int codigoCargo) {
+        this.codigoCargo = codigoCargo;
     }
 
     public String getCargo() {

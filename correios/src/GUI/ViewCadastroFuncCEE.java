@@ -148,7 +148,7 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
                                     formatData.format(funcionarios.get(i).getDataNascimento()),
                                     funcionarios.get(i).getSexo(),
                                     funcionarios.get(i).getCargo()+"",
-                                    funcionarios.get(i).getCodigo(),
+                                    funcionarios.get(i).getCodigoCargo(),
                                   };
                 model.addRow(linha);
             }

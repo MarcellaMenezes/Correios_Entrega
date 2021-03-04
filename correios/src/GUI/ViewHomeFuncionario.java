@@ -2,6 +2,7 @@ package GUI;
 
 import Classes.Cliente;
 import java.awt.Color;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -169,6 +170,8 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
         try {
             vcadastroFuncAgencia = new ViewCadastroFuncAgencia();
         } catch (ParseException ex) {
+            Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         }
         vcadastroFuncAgencia.setVisible(true);
