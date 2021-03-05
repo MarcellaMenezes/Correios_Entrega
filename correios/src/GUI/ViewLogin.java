@@ -231,11 +231,7 @@ public class ViewLogin extends javax.swing.JFrame {
         if (qualTela != null) {
             if (qualTela.equals("viewHome")) {
                 ViewHome vHome = null;
-                try {
-                    vHome = new ViewHome(resultQrCli.getString("fk_Cliente_cpf"));
-                } catch (SQLException ex) {
-                    Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                vHome = new ViewHome(cpfCli);
                 vHome.setVisible(true);
                 this.dispose();
             } else if (qualTela.equals("viewHomeFuncionario")) {

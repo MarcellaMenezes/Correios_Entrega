@@ -15,24 +15,25 @@ import javax.swing.table.DefaultTableModel;
 public class ViewEndereco extends javax.swing.JFrame {
     PreparedStatement psQrEnd = null;
     ResultSet resultQrEnd = null;
-    String cpf = null;
+    String cpfCli = null;
     
-    public ViewEndereco() {
-        initComponents();
-    }
-
+    
     ViewEndereco(String cpfCli) throws SQLException {
         initComponents();
+        this.cpfCli = cpfCli;
         carregarEnderecos();
-        this.cpf = cpf;
+        System.out.println("Cpf no Endereco:"+this.cpfCli);
     }
     
-     public void carregarEnderecos() throws SQLException {
+    public void carregarEnderecos() throws SQLException {
+        System.out.println("Cpf no metodos: "+cpfCli);
         psQrEnd = Conexao.getConexao().prepareStatement("SELECT * FROM endereco AS e "
-                + "INNER JOIN endereco_cliente AS ec on e.codEndereco = ec.fk_Endereco_codEndereco"
-                + "INNER JOIN cliente AS c on c.cpf = ec.fk_Cliente_cpf"
-                + " WHERE c.cpf = "+cpf);
+                + " INNER JOIN endereco_cliente AS ec on e.codEndereco = ec.fk_Endereco_codEndereco"
+                + " INNER JOIN cliente AS c on c.cpf = ec.fk_Cliente_cpf"
+                + " WHERE c.cpf = '"+cpfCli+"'");
         resultQrEnd = psQrEnd.executeQuery();
+        
+         System.out.println(psQrEnd);
 
         String [] colunas = {"Identificação","País", "CEP", "Rua", "Número", "Complemento", "Bairro", "Cidade", "UF"};
         DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
@@ -176,7 +177,7 @@ public class ViewEndereco extends javax.swing.JFrame {
 
         ViewCadastroEndereco viewCadastroEndereco = null;
         try {
-            viewCadastroEndereco = new ViewCadastroEndereco(cpf);
+            viewCadastroEndereco = new ViewCadastroEndereco(cpfCli);
         } catch (ParseException ex) {
             Logger.getLogger(ViewEndereco.class.getName()).log(Level.SEVERE, null, ex);
         }

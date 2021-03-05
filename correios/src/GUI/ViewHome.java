@@ -13,9 +13,11 @@ public class ViewHome extends javax.swing.JFrame {
         initComponents();
         lblExibirEnderecos.setText("<html><u>Endereços</u></html>");
     }
+    
     public ViewHome(String cpfCli) {
         initComponents();
         this.cpfCli = cpfCli;
+        System.out.println("Cpf do cliente na Home: "+cpfCli);
         lblExibirEnderecos.setText("<html><u>Endereços</u></html>");
     }
 
@@ -128,12 +130,11 @@ public class ViewHome extends javax.swing.JFrame {
         ViewEndereco viewEndereco = null;
         if(cpfCli!=null){
             try {
+                System.out.println("Passando cpf para Endereco: "+cpfCli);
                 viewEndereco = new ViewEndereco(cpfCli);
             } catch (SQLException ex) {
                 Logger.getLogger(ViewHome.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }else{
-           viewEndereco = new ViewEndereco();
         }
         viewEndereco.setVisible(true);
     }//GEN-LAST:event_lblExibirEnderecosMouseClicked

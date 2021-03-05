@@ -308,7 +308,12 @@ public class ViewCadastroEndereco extends javax.swing.JFrame {
                 Logger.getLogger(ViewCadastroEndereco.class.getName()).log(Level.SEVERE, null, ex);
             }
             
-            ViewEndereco viewEndereco = new ViewEndereco();
+            ViewEndereco viewEndereco = null;
+            try {
+                viewEndereco = new ViewEndereco(cpf);
+            } catch (SQLException ex) {
+                Logger.getLogger(ViewCadastroEndereco.class.getName()).log(Level.SEVERE, null, ex);
+            }
             viewEndereco.setVisible(true);
         }
        
