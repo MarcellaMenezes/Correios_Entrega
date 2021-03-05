@@ -123,7 +123,7 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
                 rbtnFeminino.setSelected(true);
             }
         } else {
-            JOptionPane.showMessageDialog(rootPane, "Selecione algum cliente");
+            JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
         }
     }
 
@@ -189,6 +189,20 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
             }
         }
 
+    }
+    
+    public void excluirFuncionario() throws SQLException{
+        
+        if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
+
+            String cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
+            psQrFunc = Conexao.getConexao().prepareStatement("DELETE FROM funcionario WHERE cpf ='"+cpf+"'");
+            System.out.println(psQrFunc);
+            psQrFunc.execute();
+           
+        } else {
+            JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
+        }
     }
 
     public boolean verificarCPF(String cpf) {
@@ -543,8 +557,12 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
 
     private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
         tipoEdicao = "Ex";
-        habilitarCampos(true);
-        dadosLinhaParaCampos();
+        try {
+            excluirFuncionario();
+            carregarFuncionarios();
+        } catch (SQLException ex) {
+            Logger.getLogger(ViewCadastroFuncAgencia.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }//GEN-LAST:event_btnExcluirActionPerformed
 
     /**

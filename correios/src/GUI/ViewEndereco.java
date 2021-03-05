@@ -1,6 +1,10 @@
 package GUI;
 
+import Classes.Conexao;
 import Classes.Endereco;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -9,42 +13,47 @@ import java.util.logging.Logger;
 import javax.swing.table.DefaultTableModel;
 
 public class ViewEndereco extends javax.swing.JFrame {
-    private List<Endereco> enderecos = null;
-    SimpleDateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");
+    PreparedStatement psQrEnd = null;
+    ResultSet resultQrEnd = null;
+    String cpf = null;
     
     public ViewEndereco() {
         initComponents();
     }
 
-    ViewEndereco(String cpfCli) {
+    ViewEndereco(String cpfCli) throws SQLException {
         initComponents();
-        this.enderecos = enderecos;
-        carregarEndereco();
+        carregarEnderecos();
+        this.cpf = cpf;
     }
     
-    public void carregarEndereco(){
+     public void carregarEnderecos() throws SQLException {
+        psQrEnd = Conexao.getConexao().prepareStatement("SELECT * FROM endereco AS e "
+                + "INNER JOIN endereco_cliente AS ec on e.codEndereco = ec.fk_Endereco_codEndereco"
+                + "INNER JOIN cliente AS c on c.cpf = ec.fk_Cliente_cpf"
+                + " WHERE c.cpf = "+cpf);
+        resultQrEnd = psQrEnd.executeQuery();
+
         String [] colunas = {"Identificação","País", "CEP", "Rua", "Número", "Complemento", "Bairro", "Cidade", "UF"};
         DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
         
-        if(enderecos!=null){
-            for(int i=0; i<enderecos.size(); i++){
-                enderecos.get(i).imprimir();
-                Object [] linha = {enderecos.get(i).getIdentificacaoEndereco(),
-                                    enderecos.get(i).getPais(),
-                                    enderecos.get(i).getCep(),
-                                    enderecos.get(i).getRua(),
-                                    enderecos.get(i).getNumero()+"",
-                                    enderecos.get(i).getComplemento(),
-                                    enderecos.get(i).getBairro(),
-                                    enderecos.get(i).getCidade(),
-                                    enderecos.get(i).getUf(),
-                                  };
-                model.addRow(linha);
-            }
-            tblEndereco.setModel(model);
+        while (resultQrEnd.next()) {
+            Object[] linha = {
+                resultQrEnd.getString("identificacao"),
+                resultQrEnd.getString("pais"),
+                resultQrEnd.getString("cep"),
+                resultQrEnd.getString("rua"),
+                resultQrEnd.getString("numero"),
+                resultQrEnd.getString("complemento"),
+                resultQrEnd.getString("bairro"),
+                resultQrEnd.getString("cidade"),
+                resultQrEnd.getString("uf")
+            };
+            model.addRow(linha);
         }
+        tblEndereco.setModel(model);
+    }
     
-    }  
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -164,16 +173,16 @@ public class ViewEndereco extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCadastrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCadastrarActionPerformed
-        if(enderecos!=null){
-            ViewCadastroEndereco viewCadastroEndereco = null;
-            try {
-                viewCadastroEndereco = new ViewCadastroEndereco(enderecos);
-            } catch (ParseException ex) {
-                Logger.getLogger(ViewEndereco.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            this.dispose();
-            viewCadastroEndereco.setVisible(true);
-        }    
+
+        ViewCadastroEndereco viewCadastroEndereco = null;
+        try {
+            viewCadastroEndereco = new ViewCadastroEndereco(cpf);
+        } catch (ParseException ex) {
+            Logger.getLogger(ViewEndereco.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        this.dispose();
+        viewCadastroEndereco.setVisible(true);
+          
     }//GEN-LAST:event_btnCadastrarActionPerformed
 
     

@@ -32,7 +32,14 @@ public class ViewLogin extends javax.swing.JFrame {
         lblCadastrar.setText("<html><u>Cadastrar</u>");
 
     }
+    
+     public ViewLogin(Login l) {
+        initComponents();
+        lblCadastrar.setText("<html><u>Cadastrar</u>");
+        txtEmail.setText(l.getEmail());
+        pwdSenha.setText(l.getSenha());
 
+    }
     public void verificaLogin() throws SQLException {
         String email = txtEmail.getText();
         String senha = new String(pwdSenha.getPassword());

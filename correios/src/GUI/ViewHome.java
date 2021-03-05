@@ -2,6 +2,9 @@ package GUI;
 
 import Classes.Cliente;
 import java.awt.Color;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ViewHome extends javax.swing.JFrame {
     String  cpfCli = null;
@@ -122,9 +125,13 @@ public class ViewHome extends javax.swing.JFrame {
     }//GEN-LAST:event_lblExibirEnderecosMouseExited
 
     private void lblExibirEnderecosMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblExibirEnderecosMouseClicked
-        ViewEndereco viewEndereco;
+        ViewEndereco viewEndereco = null;
         if(cpfCli!=null){
-            viewEndereco = new ViewEndereco(cpfCli);
+            try {
+                viewEndereco = new ViewEndereco(cpfCli);
+            } catch (SQLException ex) {
+                Logger.getLogger(ViewHome.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }else{
            viewEndereco = new ViewEndereco();
         }
