@@ -5,10 +5,15 @@
  */
 package GUI;
 
+import Classes.Conexao;
 import Classes.Endereco;
 import Classes.FuncAgencia;
 import Classes.FuncCEE;
+import Classes.FuncCarga;
 import Classes.Funcionario;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,137 +30,249 @@ import javax.swing.text.MaskFormatter;
  * @author marce
  */
 public class ViewCadastroFuncCEE extends javax.swing.JFrame {
+
     SimpleDateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");
-    private List<Funcionario> funcionarios = null;
-    
-    public ViewCadastroFuncCEE() throws ParseException {
+    SimpleDateFormat formtDataBD = new SimpleDateFormat("yyyy-MM-dd");
+    Funcionario funcionario = null;
+    String tipoEdicao = "";
+    PreparedStatement psQrFunc = null;
+    ResultSet resultQrFunc = null;
+
+    public ViewCadastroFuncCEE() throws ParseException, SQLException {
         initComponents();
-        
+
         MaskFormatter maskCPF = new MaskFormatter("###.###.###-##");
         MaskFormatter maskData = new MaskFormatter("##/##/####");
-          
+
         maskCPF.install(ftxtCPF);
         maskData.install(ftxtDataNasc);
-        
-        funcionarios = new ArrayList<>();
+
+        habilitarCampos(false);
+        carregarFuncionarios();
+
     }
 
-     public boolean verificarCPF(String cpf){
-        int dig1=0, dig2=0, calc1=0, calc2=0, aux1=10, aux2=11;
-        int [] arrayCPF;
-        boolean repetido = true;
-        arrayCPF = new int[9];
-        dig1 = Integer.parseInt(cpf.substring(12,13));
-        dig2 = Integer.parseInt(cpf.substring(13,14));
-        cpf = cpf.substring(0,3) + cpf.substring(4,7) + cpf.substring(8,11);
-        for(int i=0; i<arrayCPF.length; i++){
-            arrayCPF[i] = Integer.parseInt(cpf.substring(i, i+1));
-            
-            calc1 += aux1 * arrayCPF[i];
-            aux1--;
-            
-            calc2 += aux2 * arrayCPF[i];
-            aux2--;
-            
-            if(arrayCPF[0] != arrayCPF[i] && repetido)
-                repetido = false;
+    public void limparCampos() {
+        txtNome.setText("");
+        ftxtCPF.setText("");
+        ftxtDataNasc.setText("");
+        cbxCargo.setSelectedIndex(0);
+        funcionario = null;
+    }
+
+    public void habilitarCampos(boolean flag) {
+        if(tipoEdicao.equals("E")) ftxtCPF.setEnabled(false);
+        else ftxtCPF.setEnabled(flag);
+        
+        txtNome.setEnabled(flag);
+        ftxtDataNasc.setEnabled(flag);
+        cbxCargo.setEnabled(flag);
+        
+    }
+
+    public void dadosCamposParaObjeto() throws ParseException {
+        String cpf;
+        String nome;
+        Date dataNascimento;
+        char sexo;
+        int codigo;
+        String cargo;
+
+        if (validaCampos()) {
+            nome = txtNome.getText();
+            dataNascimento = formatData.parse(ftxtDataNasc.getText());
+            //System.out.println("Data Nas: " + dataNascimento);
+            if (rbtnMasculino.isSelected()) {
+                sexo = 'M';
+            } else {
+                sexo = 'F';
+            }
+            cpf = ftxtCPF.getText();
+            cargo = cbxCargo.getItemAt(cbxCargo.getSelectedIndex());
+
+            funcionario = new FuncAgencia(cpf, nome, dataNascimento, sexo, 0, cargo);
         }
-        calc2 += dig1 * aux2;
-        
-        calc1 = (calc1 * 10) % 11;
-        calc2 = (calc2 * 10) % 11;
-        
-        if(calc1 == 10)
-            calc1 = 0;
-        
-        if(calc2 == 10)
-            calc2 = 0;
-                 
-        if(calc1 != dig1 || calc2 != dig2 || repetido)
-            return false;
-        else
-            return true;
+    }
+
+    public void dadosObjetoParaCampos() throws SQLException {
+        PreparedStatement psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
+                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo =" + funcionario.getCpf());
+        psQrFunc.setString(1, funcionario.getCargo());
+        ResultSet resultQrCargo = psQrFunc.executeQuery();
+    }
+
+    public void dadosLinhaParaCampos() {
+        String cpf, nome, dataNasc, cargo, sexo;
+        if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
+
+            cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
+            nome = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 1);
+            dataNasc = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 2);
+            //System.out.println("Sexo :" + tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 3));
+            sexo = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 3);
+            cargo = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 4);
+
+            ftxtCPF.setText(cpf);
+            txtNome.setText(nome);
+            ftxtDataNasc.setText(dataNasc);
+            cbxCargo.setSelectedItem(cargo);
+
+            if (sexo.equals('M')) {
+                rbtnMasculino.setSelected(true);
+            } else {
+                rbtnFeminino.setSelected(true);
+            }
+        } else {
+            JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
+        }
+    }
+
+    public void carregarFuncionarios() throws SQLException {
+        psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
+                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo = c.codCargo");
+        resultQrFunc = psQrFunc.executeQuery();
+
+        String[] colunas = {"CPF", "Nome", "Data Nascimento", "Sexo", "Cargo", "Codigo"};
+        DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
+        while (resultQrFunc.next()) {
+            Object[] linha = {resultQrFunc.getString("cpf"),
+                resultQrFunc.getString("nome"),
+                resultQrFunc.getString("dataNasc"),
+                resultQrFunc.getString("sexo"),
+                resultQrFunc.getString("nomeCargo"),
+                resultQrFunc.getString("fk_Cargo_codCargo")
+            };
+            model.addRow(linha);
+        }
+        tblCadastroFuncAgencia.setModel(model);
+    }
+
+    public void cadastraFuncionario() throws SQLException {
+
+        if (funcionario != null && tipoEdicao.equals("C")) {
+            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
+            psQrCargo.setString(1, funcionario.getCargo());
+            ResultSet resultQrCargo = psQrCargo.executeQuery();
+            
+            if (resultQrCargo.next()) {
+                System.out.println("Cargo cadastro func: "+resultQrCargo.getString("codCargo"));
+                psQrFunc = Conexao.getConexao().prepareStatement("INSERT INTO funcionario (cpf, nome, dataNascimento, sexo, fk_Cargo_codCargo) VALUES"
+                        + " ('" + funcionario.getCpf() + "','" + funcionario.getNome()
+                        + "','" + formtDataBD.format(funcionario.getDataNascimento())
+                        + "','" + funcionario.getSexo()
+                        + "'," + resultQrCargo.getString("codCargo") + ")");
+                System.out.println(psQrFunc);
+                psQrFunc.execute();
+            }
+        }
+    }
+
+    public void editarFuncionario() throws SQLException {
+        if (funcionario != null && tipoEdicao.equals("E")) {
+            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
+            psQrCargo.setString(1, funcionario.getCargo());
+            ResultSet resultQrCargo = psQrCargo.executeQuery();
+            
+            System.out.println("Cargo objeto: "+funcionario.getCargo());
+       
+            if (resultQrCargo.next()) {
+                //String sexo = Character.toString(funcionario.getSexo());
+                psQrFunc = Conexao.getConexao().prepareStatement("UPDATE funcionario SET"
+                        + " nome = '" + funcionario.getNome()+"'"
+                        + " , dataNascimento = '" + formtDataBD.format(funcionario.getDataNascimento())+"'"
+                        + " , sexo = '" +funcionario.getSexo() + "'"
+                        + ", fk_Cargo_codCargo = " + "'"+resultQrCargo.getString("codCargo")+"'"
+                        + " WHERE cpf = '" +funcionario.getCpf()+"'");
+
+                System.out.println(psQrFunc);
+                psQrFunc. executeUpdate();     
+            }
+        }
+
     }
     
-    public boolean validaCampos(){
-        if(ftxtCPF.getText().replace(" ", "").length()<13){
+    public void excluirFuncionario() throws SQLException{
+        
+        if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
+
+            String cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
+            psQrFunc = Conexao.getConexao().prepareStatement("DELETE FROM funcionario WHERE cpf ='"+cpf+"'");
+            System.out.println(psQrFunc);
+            psQrFunc.execute();
+           
+        } else {
+            JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
+        }
+    }
+
+    public boolean verificarCPF(String cpf) {
+        int dig1 = 0, dig2 = 0, calc1 = 0, calc2 = 0, aux1 = 10, aux2 = 11;
+        int[] arrayCPF;
+        boolean repetido = true;
+        arrayCPF = new int[9];
+        dig1 = Integer.parseInt(cpf.substring(12, 13));
+        dig2 = Integer.parseInt(cpf.substring(13, 14));
+        cpf = cpf.substring(0, 3) + cpf.substring(4, 7) + cpf.substring(8, 11);
+        for (int i = 0; i < arrayCPF.length; i++) {
+            arrayCPF[i] = Integer.parseInt(cpf.substring(i, i + 1));
+
+            calc1 += aux1 * arrayCPF[i];
+            aux1--;
+
+            calc2 += aux2 * arrayCPF[i];
+            aux2--;
+
+            if (arrayCPF[0] != arrayCPF[i] && repetido) {
+                repetido = false;
+            }
+        }
+        calc2 += dig1 * aux2;
+
+        calc1 = (calc1 * 10) % 11;
+        calc2 = (calc2 * 10) % 11;
+
+        if (calc1 == 10) {
+            calc1 = 0;
+        }
+
+        if (calc2 == 10) {
+            calc2 = 0;
+        }
+
+        if (calc1 != dig1 || calc2 != dig2 || repetido) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public boolean validaCampos() {
+        if (ftxtCPF.getText().replace(" ", "").length() < 13 && ftxtCPF.isEnabled()) {
             JOptionPane.showMessageDialog(rootPane, "Preencha o cpf corretamente (deve conter 11 dígitos)");
             ftxtCPF.requestFocus();
             return false;
-        }else{
-            if (!verificarCPF(ftxtCPF.getText())){
-                JOptionPane.showMessageDialog(rootPane, "CPF Inválido");  
+        } else {
+            if (!verificarCPF(ftxtCPF.getText()) && ftxtCPF.isEnabled()) {
+                JOptionPane.showMessageDialog(rootPane, "CPF Inválido");
                 ftxtCPF.requestFocus();
                 return false;
             }
         }
-        
-        if(!txtNome.getText().replace(" ", "").matches("[A-Za-z]{3,}")){
+
+        if (!txtNome.getText().replace(" ", "").matches("[A-Za-z]{3,}")) {
             JOptionPane.showMessageDialog(rootPane, "Preencha o nome corretamente (somente letras e sem acento)");
             txtNome.requestFocus();
             return false;
         }
-        
-        if(ftxtDataNasc.getText().replace(" ", "").length()<10){
+
+        if (ftxtDataNasc.getText().replace(" ", "").length() < 10) {
             JOptionPane.showMessageDialog(rootPane, "Preencha a data de nascimento corretamente (deve conter 8 dígitos)");
             ftxtDataNasc.requestFocus();
             return false;
         }
         return true;
     }
-    
-     public void limparCampos(){
-        txtNome.setText("");
-        ftxtCPF.setText("");
-        ftxtDataNasc.setText("");
-        txtCodigo.setText("");
-        cbxCargo.setSelectedIndex(0);
-    }
-    
-    public void dadosCamposParaLista() throws ParseException{
-        FuncCEE funcCEE;
-        String cpf;String nome; Date dataNascimento; char sexo;
-        int codigo; String cargo;
-        
-        if(validaCampos()){
-            nome = txtNome.getText();
-            dataNascimento = formatData.parse(ftxtDataNasc.getText());
-            if(rbtnMasculino.isSelected()){
-                sexo='M';
-            }else{
-                sexo='F';
-            }
-            cpf = ftxtCPF.getText();
-            codigo = Integer.parseInt(txtCodigo.getText());
-            cargo = cbxCargo.getItemAt(cbxCargo.getSelectedIndex());
 
-            funcCEE = new FuncCEE(cpf, nome, dataNascimento, sexo, codigo, cargo);
-            funcionarios.add(funcCEE);
-
-            limparCampos();      
-        }          
-    }
-    
-    public void carregarEndereco(){
-        String [] colunas = {"CPF","Nome", "Data Nascimento", "Sexo", "Cargo", "Codigo"};
-        DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
-        
-        if(funcionarios!=null){
-            for(int i=0; i<funcionarios.size(); i++){
-                funcionarios.get(i).imprimir();
-                Object [] linha = {funcionarios.get(i).getCpf(),
-                                    funcionarios.get(i).getNome(),
-                                    formatData.format(funcionarios.get(i).getDataNascimento()),
-                                    funcionarios.get(i).getSexo(),
-                                    funcionarios.get(i).getCargo()+"",
-                                    funcionarios.get(i).getCodigoCargo(),
-                                  };
-                model.addRow(linha);
-            }
-            tblCadastroFuncAgencia.setModel(model);
-        }
-    
-    }  
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -163,7 +280,7 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
         pnlHead = new javax.swing.JPanel();
         lblLogo = new javax.swing.JLabel();
         pnlBody = new javax.swing.JPanel();
-        lblCEE = new javax.swing.JLabel();
+        lblAgencia = new javax.swing.JLabel();
         lblObservacao = new javax.swing.JLabel();
         ftxtCPF = new javax.swing.JFormattedTextField();
         txtNome = new javax.swing.JTextField();
@@ -171,12 +288,15 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
         rbtnFeminino = new javax.swing.JRadioButton();
         rbtnMasculino = new javax.swing.JRadioButton();
         lblSexo = new javax.swing.JLabel();
-        txtCodigo = new javax.swing.JTextField();
         cbxCargo = new javax.swing.JComboBox<>();
         lblCargo = new javax.swing.JLabel();
         spnlTabela = new javax.swing.JScrollPane();
         tblCadastroFuncAgencia = new javax.swing.JTable();
         btnCadastrar = new javax.swing.JButton();
+        btnEditar = new javax.swing.JButton();
+        btnExcluir = new javax.swing.JButton();
+        btnCancelar = new javax.swing.JButton();
+        btnSalvar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -202,10 +322,10 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
                 .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        lblCEE.setFont(new java.awt.Font("Arial", 0, 22)); // NOI18N
-        lblCEE.setForeground(new java.awt.Color(0, 51, 153));
-        lblCEE.setText("Cadastro Funcionário do Centro de Entrega de Encomendas (CEE)");
-        lblCEE.setAlignmentX(0.5F);
+        lblAgencia.setFont(new java.awt.Font("Arial", 0, 22)); // NOI18N
+        lblAgencia.setForeground(new java.awt.Color(0, 51, 153));
+        lblAgencia.setText("Cadastro Funcionário da Agência");
+        lblAgencia.setAlignmentX(0.5F);
 
         lblObservacao.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblObservacao.setForeground(new java.awt.Color(51, 102, 255));
@@ -228,10 +348,8 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
         lblSexo.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
         lblSexo.setText("Sexo: *");
 
-        txtCodigo.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Código: *", javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.ABOVE_TOP, new java.awt.Font("Arial", 0, 14))); // NOI18N
-
         cbxCargo.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
-        cbxCargo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Gerente", "Motorista", "Funcionário" }));
+        cbxCargo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Administrador", "Gerente", "Motorista" }));
         cbxCargo.setBorder(null);
 
         lblCargo.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
@@ -257,6 +375,29 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
             }
         });
 
+        btnEditar.setText("Editar");
+        btnEditar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditarActionPerformed(evt);
+            }
+        });
+
+        btnExcluir.setText("Excluir");
+        btnExcluir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnExcluirActionPerformed(evt);
+            }
+        });
+
+        btnCancelar.setText("Cancelar");
+
+        btnSalvar.setText("Salvar");
+        btnSalvar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSalvarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout pnlBodyLayout = new javax.swing.GroupLayout(pnlBody);
         pnlBody.setLayout(pnlBodyLayout);
         pnlBodyLayout.setHorizontalGroup(
@@ -264,69 +405,84 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
             .addGroup(pnlBodyLayout.createSequentialGroup()
                 .addGap(180, 180, 180)
                 .addComponent(lblObservacao)
-                .addGap(0, 507, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(pnlBodyLayout.createSequentialGroup()
                 .addGap(22, 22, 22)
-                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(spnlTabela, javax.swing.GroupLayout.PREFERRED_SIZE, 723, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addComponent(ftxtDataNasc, javax.swing.GroupLayout.PREFERRED_SIZE, 211, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 169, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblCargo)
-                            .addComponent(cbxCargo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(lblAgencia, javax.swing.GroupLayout.PREFERRED_SIZE, 691, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addComponent(ftxtCPF, javax.swing.GroupLayout.PREFERRED_SIZE, 211, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(txtNome, javax.swing.GroupLayout.PREFERRED_SIZE, 388, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, pnlBodyLayout.createSequentialGroup()
+                                .addComponent(ftxtDataNasc, javax.swing.GroupLayout.PREFERRED_SIZE, 211, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(cbxCargo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(lblCargo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGap(18, 18, 18)
+                                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(lblSexo)
+                                    .addComponent(rbtnMasculino, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(rbtnFeminino, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, pnlBodyLayout.createSequentialGroup()
+                                .addComponent(ftxtCPF, javax.swing.GroupLayout.PREFERRED_SIZE, 211, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(txtNome, javax.swing.GroupLayout.PREFERRED_SIZE, 388, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCadastrar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(108, 108, 108))
+                    .addGroup(pnlBodyLayout.createSequentialGroup()
+                        .addComponent(spnlTabela, javax.swing.GroupLayout.PREFERRED_SIZE, 723, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblSexo)
-                            .addComponent(rbtnFeminino)
-                            .addComponent(rbtnMasculino)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlBodyLayout.createSequentialGroup()
-                        .addComponent(lblCEE, javax.swing.GroupLayout.PREFERRED_SIZE, 691, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(13, 13, 13)))
-                .addGap(18, 18, 18)
-                .addComponent(btnCadastrar)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(btnEditar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(pnlBodyLayout.createSequentialGroup()
+                                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(btnSalvar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(btnCancelar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(btnExcluir, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(0, 0, Short.MAX_VALUE))))))
         );
         pnlBodyLayout.setVerticalGroup(
             pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlBodyLayout.createSequentialGroup()
                 .addGap(12, 12, 12)
-                .addComponent(lblCEE)
+                .addComponent(lblAgencia)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(lblObservacao)
-                .addGap(18, 18, 18)
                 .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(ftxtCPF, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(txtNome, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(pnlBodyLayout.createSequentialGroup()
+                        .addComponent(lblObservacao)
+                        .addGap(26, 26, 26)
+                        .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(ftxtCPF, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtNome, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(ftxtDataNasc, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(pnlBodyLayout.createSequentialGroup()
+                                .addComponent(lblCargo)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(cbxCargo, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(pnlBodyLayout.createSequentialGroup()
+                        .addComponent(btnCadastrar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
                         .addComponent(lblSexo)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(rbtnFeminino)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(rbtnMasculino)))
-                .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(ftxtDataNasc, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addGap(17, 17, 17)
-                        .addComponent(lblCargo)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(cbxCargo, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(spnlTabela, javax.swing.GroupLayout.DEFAULT_SIZE, 284, Short.MAX_VALUE)
                     .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addComponent(btnCadastrar)
+                        .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnExcluir, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -353,26 +509,76 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCadastrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCadastrarActionPerformed
+        tipoEdicao = "C";
+        habilitarCampos(true);
+    }//GEN-LAST:event_btnCadastrarActionPerformed
+
+    private void btnSalvarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalvarActionPerformed
+        if (tipoEdicao.equals("C") || tipoEdicao.equals("E")) {
+
+            try {
+                dadosCamposParaObjeto();
+            } catch (ParseException ex) {
+                Logger.getLogger(ViewCadastroFuncCEE.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            if (tipoEdicao.equals("C")) {
+                try {
+                    cadastraFuncionario();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ViewCadastroFuncCEE.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+
+            if (tipoEdicao.equals("E")) {
+                try {
+                    editarFuncionario();
+                } catch (SQLException ex) {
+                    Logger.getLogger(ViewCadastroFuncCEE.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+            }
+        }
         try {
-            dadosCamposParaLista();
-            carregarEndereco();
-        } catch (ParseException ex) {
+                limparCampos();
+                habilitarCampos(false);
+                carregarFuncionarios();
+            } catch (SQLException ex) {
+                Logger.getLogger(ViewCadastroFuncCEE.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+    }//GEN-LAST:event_btnSalvarActionPerformed
+
+    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
+        tipoEdicao = "E";
+        habilitarCampos(true);
+        dadosLinhaParaCampos();
+    }//GEN-LAST:event_btnEditarActionPerformed
+
+    private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
+        tipoEdicao = "Ex";
+        try {
+            excluirFuncionario();
+            carregarFuncionarios();
+        } catch (SQLException ex) {
             Logger.getLogger(ViewCadastroFuncCEE.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-    }//GEN-LAST:event_btnCadastrarActionPerformed
+    }//GEN-LAST:event_btnExcluirActionPerformed
 
     /**
      * @param args the command line arguments
      */
- 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnCadastrar;
+    private javax.swing.JButton btnCancelar;
+    private javax.swing.JButton btnEditar;
+    private javax.swing.JButton btnExcluir;
+    private javax.swing.JButton btnSalvar;
     private javax.swing.JComboBox<String> cbxCargo;
     private javax.swing.JFormattedTextField ftxtCPF;
     private javax.swing.JFormattedTextField ftxtDataNasc;
-    private javax.swing.JLabel lblCEE;
+    private javax.swing.JLabel lblAgencia;
     private javax.swing.JLabel lblCargo;
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblObservacao;
@@ -383,7 +589,6 @@ public class ViewCadastroFuncCEE extends javax.swing.JFrame {
     private javax.swing.JRadioButton rbtnMasculino;
     private javax.swing.JScrollPane spnlTabela;
     private javax.swing.JTable tblCadastroFuncAgencia;
-    private javax.swing.JTextField txtCodigo;
     private javax.swing.JTextField txtNome;
     // End of variables declaration//GEN-END:variables
 }

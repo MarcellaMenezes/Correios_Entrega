@@ -182,12 +182,16 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
     }//GEN-LAST:event_lblFuncCargasMouseMoved
 
     private void lblFuncCargasMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblFuncCargasMouseClicked
-         ViewCadastroFuncCarga vcadastroFuncCarga = null;
+        ViewCadastroFuncCarga vcadastroFuncCarga = null;
+        
         try {
             vcadastroFuncCarga = new ViewCadastroFuncCarga();
         } catch (ParseException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         }
+       
         vcadastroFuncCarga.setVisible(true);
     }//GEN-LAST:event_lblFuncCargasMouseClicked
 
@@ -201,11 +205,15 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
 
     private void lblFuncCEE1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblFuncCEE1MouseClicked
         ViewCadastroFuncCEE vcadastroFuncCee = null;
+      
         try {
             vcadastroFuncCee = new ViewCadastroFuncCEE();
         } catch (ParseException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
         vcadastroFuncCee.setVisible(true);
     }//GEN-LAST:event_lblFuncCEE1MouseClicked
 
