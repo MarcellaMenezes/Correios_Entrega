@@ -16,10 +16,11 @@ import javax.swing.JOptionPane;
 import javax.swing.text.MaskFormatter;
 
 public class ViewLogin extends javax.swing.JFrame {
-    private String cpfCli=null;
+
+    private String cpfCli = null;
     List<Login> logins;
     Cliente client = null;
-    PreparedStatement psQrCli =  null, psQrAdm = null;
+    PreparedStatement psQrCli = null, psQrAdm = null;
     ResultSet resultQrCli = null, resultQrAdm = null;
     String qualTela = null;
 
@@ -29,60 +30,57 @@ public class ViewLogin extends javax.swing.JFrame {
     public ViewLogin() {
         initComponents();
         lblCadastrar.setText("<html><u>Cadastrar</u>");
-        
+
     }
-  
-    public void verificaLogin() throws SQLException{
+
+    public void verificaLogin() throws SQLException {
         String email = txtEmail.getText();
         String senha = new String(pwdSenha.getPassword());
 
-        if(email.isEmpty() && senha.isEmpty()){
+        if (email.isEmpty() && senha.isEmpty()) {
             JOptionPane.showMessageDialog(rootPane, "Inisira seu e-mail e sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
             txtEmail.requestFocus();
-        }
-        else if(email.isEmpty() && !senha.isEmpty()){
+        } else if (email.isEmpty() && !senha.isEmpty()) {
             txtEmail.requestFocus();
             JOptionPane.showMessageDialog(rootPane, "Insira seu e-mail", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
-        }
-        else if (!email.isEmpty() && senha.isEmpty()){
+        } else if (!email.isEmpty() && senha.isEmpty()) {
             pwdSenha.requestFocus();
             JOptionPane.showMessageDialog(rootPane, "Insira sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
-        }else{
- 
-            //verificando primeiro se o login é de um ciente
+        } else {
+
+            //verificando primeiro se o login é de um cliente
             psQrCli = Conexao.getConexao().prepareStatement("SELECT l.codLogin, lc.fk_Cliente_cpf FROM login AS l"
-                    + " INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");           
+                    + " INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");
             psQrCli.setString(1, senha);
             psQrCli.setString(2, email);
             resultQrCli = psQrCli.executeQuery();
 
             //se existe cliente, pode abrir a tela de cliente
-            if(resultQrCli.next()){
+            if (resultQrCli.next()) {
                 cpfCli = resultQrCli.getString("fk_Cliente_cpf");
                 qualTela = "viewHome";
-                System.out.println("Login: "+resultQrCli.getString("codLogin")+ " Cpf Cliente: "+cpfCli);  
-            }
-            //senão, verifica se existe adm
-            else{
-                psQrAdm =  Conexao.getConexao().prepareStatement("SELECT l.codLogin, c.nomeCargo FROM login as l"
-                                                                    + " INNER JOIN login_funcionario as lf on l.codLogin = lf.fk_Login_codLogin"
-                                                                    + " INNER JOIN funcionario as f on f.fk_Cargo_codCargo = lf.fk_Login_codLogin"
-                                                                    + " INNER JOIN cargo as c on f.fk_Cargo_codCargo = c.codCargo"
-                                                                    + " WHERE l.senha = ? AND l.email = ?");
+                System.out.println("Login: " + resultQrCli.getString("codLogin") + " Cpf Cliente: " + cpfCli);
+            } //senão, verifica se existe adm
+            else {
+                psQrAdm = Conexao.getConexao().prepareStatement("SELECT l.codLogin, c.nomeCargo FROM login as l "
+                        + "INNER JOIN login_funcionario as lf on l.codLogin = lf.fk_Login_codLogin "
+                        + "INNER JOIN funcionario as f on f.cpf = lf.fk_Funcionario_cpf "
+                        + "INNER JOIN cargo as c on f.fk_Cargo_codCargo = c.codCargo"
+                        + " WHERE l.senha = ? AND l.email = ?");
                 psQrAdm.setString(1, senha);
                 psQrAdm.setString(2, email);
                 resultQrAdm = psQrAdm.executeQuery();
                 //se existe adm, abre a tela de admn
-                if(resultQrAdm.next()){
-                    System.out.println("Login: "+resultQrAdm.getString("codLogin")+ "Nome Cargo: "+resultQrAdm.getString("nomeCargo"));
-                    if(resultQrAdm.getString("nomeCargo").equals("Administrador")){
+                if (resultQrAdm.next()) {
+                    //System.out.println("Login: " + resultQrAdm.getString("codLogin") + "Nome Cargo: " + resultQrAdm.getString("nomeCargo"));
+                    if (resultQrAdm.getString("nomeCargo").equals("Administrador")) {
                         qualTela = "viewHomeFuncionario";
                     }
-                }   
+                }
             }
-            
+
         }
-           
+
     }
 
     /**
@@ -208,12 +206,12 @@ public class ViewLogin extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void lblCadastrarMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCadastrarMouseMoved
-       lblCadastrar.setForeground(Color.ORANGE);
+        lblCadastrar.setForeground(Color.ORANGE);
 
     }//GEN-LAST:event_lblCadastrarMouseMoved
 
     private void lblCadastrarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCadastrarMouseExited
-         lblCadastrar.setForeground(Color.BLUE);
+        lblCadastrar.setForeground(Color.BLUE);
     }//GEN-LAST:event_lblCadastrarMouseExited
 
     private void btnEntrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntrarActionPerformed
@@ -223,27 +221,26 @@ public class ViewLogin extends javax.swing.JFrame {
         } catch (SQLException ex) {
             Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
         }
-        if(qualTela!=null){
-            if(qualTela.equals("viewHome")){
-               ViewHome vHome = null; 
-            try {
-                vHome = new ViewHome(resultQrCli.getString("fk_Cliente_cpf"));
-            } catch (SQLException ex) {
-                Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
-            }
-               vHome.setVisible(true);
-               this.dispose();
-            }
-            else if(qualTela.equals("viewHomeFuncionario")){
+        if (qualTela != null) {
+            if (qualTela.equals("viewHome")) {
+                ViewHome vHome = null;
+                try {
+                    vHome = new ViewHome(resultQrCli.getString("fk_Cliente_cpf"));
+                } catch (SQLException ex) {
+                    Logger.getLogger(ViewLogin.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                vHome.setVisible(true);
+                this.dispose();
+            } else if (qualTela.equals("viewHomeFuncionario")) {
                 ViewHomeFuncionario vHomeFunc = new ViewHomeFuncionario();
                 vHomeFunc.setVisible(true);
                 this.dispose();
-            }else{
+            } else {
                 JOptionPane.showMessageDialog(rootPane, "E-mail ou Senha Incorretos", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
-            } 
+            }
         }
-           
-      
+
+
     }//GEN-LAST:event_btnEntrarActionPerformed
 
     private void lblCadastrarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCadastrarMouseClicked
@@ -261,13 +258,13 @@ public class ViewLogin extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     //public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+    /* Set the Nimbus look and feel */
+    //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+    /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        //try {
-         /*   for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+     */
+    //try {
+    /*   for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
@@ -285,12 +282,12 @@ public class ViewLogin extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-       /* java.awt.EventQueue.invokeLater(new Runnable() {
+ /* java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new ViewLogin().setVisible(true);
             }
         });*/
-   // }
+    // }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEntrar;
