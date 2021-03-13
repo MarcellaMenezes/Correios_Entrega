@@ -37,8 +37,9 @@ public class ViewLogin extends javax.swing.JFrame {
 
     }
     
-     public ViewLogin(Login l) {
+    public ViewLogin(Login l) {
         initComponents();
+        loginDao = new LoginDAO();
         lblCadastrar.setText("<html><u>Cadastrar</u>");
         txtEmail.setText(l.getEmail());
         pwdSenha.setText(l.getSenha());
@@ -47,6 +48,8 @@ public class ViewLogin extends javax.swing.JFrame {
     public void verificaLogin() throws SQLException {
         String email = txtEmail.getText();
         String senha = new String(pwdSenha.getPassword());
+        
+        System.out.println("Email: "+email+"  Senha: "+senha);
         
         ArrayList<Object> loginResultado = null;
         Login login = null;
@@ -230,7 +233,6 @@ public class ViewLogin extends javax.swing.JFrame {
     }//GEN-LAST:event_lblCadastrarMouseExited
 
     private void btnEntrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntrarActionPerformed
-
         try {
             verificaLogin();
         } catch (SQLException ex) {
@@ -250,8 +252,6 @@ public class ViewLogin extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(rootPane, "E-mail ou Senha Incorretos", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
             }
         }
-
-
     }//GEN-LAST:event_btnEntrarActionPerformed
 
     private void lblCadastrarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCadastrarMouseClicked

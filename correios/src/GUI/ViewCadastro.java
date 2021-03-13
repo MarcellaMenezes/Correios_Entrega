@@ -1,5 +1,8 @@
 package GUI;
 
+import DAO.ClienteDAO;
+import DAO.EnderecoDAO;
+import DAO.LoginDAO;
 import Model.Cliente;
 import Model.Conexao;
 import Model.Endereco;
@@ -27,9 +30,10 @@ public class ViewCadastro extends javax.swing.JFrame {
     
     SimpleDateFormat formatData = new SimpleDateFormat("dd/MM/yyyy");
     SimpleDateFormat formtDataBD = new SimpleDateFormat("yyyy-MM-dd");
-    PreparedStatement psQrCli = null;
-    ResultSet resultQrCli = null;
-    
+   
+    LoginDAO loginDao = null;
+    EnderecoDAO enderecoDao = null;
+    ClienteDAO clienteDao = null;
     
     public ViewCadastro() throws ParseException {
         initComponents();
@@ -41,7 +45,11 @@ public class ViewCadastro extends javax.swing.JFrame {
         
         maskCPF.install(ftxtCPF);
         maskData.install(ftxtDataNasc);
-        maskCEP.install(ftxtCEP);  
+        maskCEP.install(ftxtCEP);
+        
+        clienteDao = new ClienteDAO();
+        enderecoDao = new EnderecoDAO();
+        loginDao = new LoginDAO();
     }
     
     public boolean verificarCPF(String cpf){
@@ -174,101 +182,19 @@ public class ViewCadastro extends javax.swing.JFrame {
 
     public void cadastraCliente() throws SQLException{
         if (usuario != null) {
-            System.out.println("Objeto Usuario existe");
-            PreparedStatement psQrLCli = Conexao.getConexao().prepareStatement("SELECT * FROM cliente WHERE cpf = ?");
-            psQrLCli.setString(1, usuario.getCpf());
-            ResultSet resultQrLCli = psQrLCli.executeQuery();
-            
-            System.out.println("Resultado query: "+resultQrLCli.next());
-            if (resultQrLCli.next()==false){
-                 System.out.println("Entrou para cadastrar");
-                psQrCli = Conexao.getConexao().prepareStatement("INSERT INTO cliente (cpf, nome, dataNascimento, sexo) VALUES"
-                        + " ('" + usuario.getCpf()
-                        + "','" + usuario.getNome()
-                        + "','" + formtDataBD.format(usuario.getDataNascimento())
-                        + "','" + usuario.getSexo()+"')");
-                System.out.println(psQrCli);
-                psQrCli.execute();
-            }else{
-                JOptionPane.showMessageDialog(rootPane, "Já existe esse cliente cadastrado");
-                ftxtCPF.requestFocus();
-            }
+            clienteDao.adiciona(usuario, "");
         }
     }
     
     public void cadastraLogin() throws SQLException{
         if (login != null) {
-            
-            PreparedStatement psQrL = Conexao.getConexao().prepareStatement("SELECT codLogin FROM login WHERE email = ? and senha = ?");
-            psQrL.setString(1, login.getEmail());
-            psQrL.setString(2, login.getSenha());
-            ResultSet resultQrL = psQrL.executeQuery();
-            
-            //não existe esse login, pode cadastrar
-            if(resultQrL.next()==false){
-                resultQrL.close();
-                psQrCli = Conexao.getConexao().prepareStatement("INSERT INTO login (email, senha) VALUES"
-                        + " ('" + login.getEmail()+ "','" + login.getSenha() +"')");
-                System.out.println(psQrCli);
-                psQrCli.execute();
-                
-                PreparedStatement psQrL1 = Conexao.getConexao().prepareStatement("SELECT codLogin FROM login WHERE email = ? and senha = ?");
-                psQrL1.setString(1, login.getEmail());
-                psQrL1.setString(2, login.getSenha());
-                ResultSet resultQrL1 = psQrL1.executeQuery();
-                System.out.println(psQrL1);
-                
-                if(usuario!=null && resultQrL1.next()){
-                    int codLogin = Integer.parseInt(resultQrL1.getString("codLogin"));
-                    System.out.println("Cpf do Cliente: "+usuario.getCpf());
-                    System.out.println("\n Cod Login: "+codLogin);
-                    psQrCli = Conexao.getConexao().prepareStatement("INSERT INTO login_cliente (fk_Cliente_cpf, fk_Login_codLogin) VALUES"
-                            + " ('" + usuario.getCpf()+ "'," +codLogin+")");
-                    System.out.println(psQrCli);
-                    psQrCli.execute();
-                }        
-            }else{
-                JOptionPane.showMessageDialog(rootPane, "Já existe um login para esse usuário");
-            }
-    
+            loginDao.adiciona(login, usuario.getCpf());
         }
     }
     
     public void cadastraEndereco() throws SQLException{
         if (endereco != null) {
-            PreparedStatement psQrE = Conexao.getConexao().prepareStatement("INSERT INTO endereco ( identificacao, pais, cep, rua, numero, complemento, bairro, cidade, uf) VALUES"
-                    + " ('" + endereco.getIdentificacaoEndereco()
-                    + "','" + endereco.getPais()
-                    + "','" + endereco.getCep()
-                    + "','" + endereco.getRua()
-                    + "','" + endereco.getNumero()
-                    + "','" + endereco.getComplemento()
-                    + "','" + endereco.getBairro()
-                    + "','" + endereco.getCidade()
-                    + "','" + endereco.getUf()+"')");
-            System.out.println(psQrE);
-            psQrE.execute();    
-            
-            PreparedStatement psQrEnd = Conexao.getConexao().prepareStatement("SELECT codEndereco FROM endereco WHERE "
-                    + "identificacao = ? and pais = ? and cep = ? and rua = ? and numero = ? and complemento = ? and bairro = ? and cidade = ? and uf = ?");
-            psQrEnd.setString(1, endereco.getIdentificacaoEndereco());
-            psQrEnd.setString(2, endereco.getPais() );
-            psQrEnd.setString(3, endereco.getCep() );
-            psQrEnd.setString(4, endereco.getRua());
-            psQrEnd.setInt(5, endereco.getNumero());
-            psQrEnd.setString(6, endereco.getComplemento());
-            psQrEnd.setString(7, endereco.getBairro());
-            psQrEnd.setString(8, endereco.getCidade());
-            psQrEnd.setString(9, endereco.getUf());
-            ResultSet resultQrEnd = psQrEnd.executeQuery();
-            
-            if (resultQrEnd.next()) {
-                PreparedStatement psQrEC = Conexao.getConexao().prepareStatement("INSERT INTO endereco_cliente (fk_Endereco_codEndereco, fk_Cliente_cpf) VALUES"
-                         + " ('" +resultQrEnd.getString("codEndereco")
-                         + "','" + usuario.getCpf()+"')");
-                 System.out.println(psQrEC);
-                 psQrEC.execute();
-            }
+            enderecoDao.adiciona(endereco, usuario.getCpf());
         }
     }
     @SuppressWarnings("unchecked")

@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -17,7 +18,44 @@ public class LoginDAO implements InterfaceDAO {
 
     @Override
     public void adiciona(Object obj, String cpf) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            Login login = (Login) obj;
+            PreparedStatement psQrL;
+        
+        try {
+            psQrL = Conexao.getConexao().prepareStatement("SELECT codLogin FROM login WHERE email = ? and senha = ?");
+            psQrL.setString(1, login.getEmail());
+            psQrL.setString(2, login.getSenha());
+            ResultSet resultQrL = psQrL.executeQuery();
+            
+            //não existe esse login, pode cadastrar
+            if(resultQrL.next()==false){
+                resultQrL.close();
+                psQrL = Conexao.getConexao().prepareStatement("INSERT INTO login (email, senha) VALUES"
+                        + " ('" + login.getEmail()+ "','" + login.getSenha() +"')");
+                System.out.println(psQrL);
+                psQrL.execute();
+                
+                PreparedStatement psQrL1 = Conexao.getConexao().prepareStatement("SELECT codLogin FROM login WHERE email = ? and senha = ?");
+                psQrL1.setString(1, login.getEmail());
+                psQrL1.setString(2, login.getSenha());
+                ResultSet resultQrL1 = psQrL1.executeQuery();
+                System.out.println(psQrL1);
+                
+                if(login!=null && resultQrL1.next()){
+                    int codLogin = Integer.parseInt(resultQrL1.getString("codLogin"));
+                    System.out.println("Cpf do Cliente: "+cpf);
+                    System.out.println("\n Cod Login: "+codLogin);
+                    psQrL = Conexao.getConexao().prepareStatement("INSERT INTO login_cliente (fk_Cliente_cpf, fk_Login_codLogin) VALUES"
+                            + " ('" + cpf+ "'," +codLogin+")");
+                    System.out.println(psQrL);
+                    psQrL.execute();
+                }        
+            }else{
+                JOptionPane.showMessageDialog(null, "Já existe um login para esse usuário");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(LoginDAO.class.getName()).log(Level.SEVERE, null, ex);
+        }         
     }
 
     @Override
@@ -43,6 +81,8 @@ public class LoginDAO implements InterfaceDAO {
                 //verificando primeiro se o login é de um cliente
                 psQrCli = Conexao.getConexao().prepareStatement("SELECT l.codLogin, lc.fk_Cliente_cpf FROM login AS l"
                         + " INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");
+               
+                System.out.println("Query Login: "+psQrCli);
                 psQrCli.setString(1, login.getSenha());
                 psQrCli.setString(2, login.getEmail());
                 resultQrCli = psQrCli.executeQuery();
