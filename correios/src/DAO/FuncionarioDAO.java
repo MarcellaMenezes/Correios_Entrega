@@ -28,11 +28,12 @@ public class FuncionarioDAO implements InterfaceDAO{
 
                 if (resultQrCargo.next()) {
                     System.out.println("Cargo cadastro func: "+resultQrCargo.getString("codCargo"));
-                    psQrFunc = Conexao.getConexao().prepareStatement("INSERT INTO funcionario (cpf, nome, dataNascimento, sexo, fk_Cargo_codCargo) VALUES"
+                    psQrFunc = Conexao.getConexao().prepareStatement("INSERT INTO funcionario (cpf, nome, dataNascimento, sexo, fk_Cargo_codCargo, localTrabalho) VALUES"
                             + " ('" + funcionario.getCpf() + "','" + funcionario.getNome()
                             + "','" + formtDataBD.format(funcionario.getDataNascimento())
                             + "','" + funcionario.getSexo()
-                            + "'," + resultQrCargo.getString("codCargo") + ")");
+                            + "'," + resultQrCargo.getString("codCargo")
+                            + ", '" +funcionario.getLocalTrabalho()+ "')");
                     System.out.println(psQrFunc);
                     psQrFunc.execute();
                 }
@@ -83,7 +84,7 @@ public class FuncionarioDAO implements InterfaceDAO{
 
     @Override
     public ArrayList<Object> consulta(Object obj, String aux) {
-        String cargo = (String) obj;
+        String localTrabalho = (String) obj;
         ArrayList resultado;
         PreparedStatement psQrFunc = null;
         ResultSet resultQrFunc = null;
@@ -91,7 +92,9 @@ public class FuncionarioDAO implements InterfaceDAO{
         try {
             resultado = new ArrayList<Object>();
             psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
-                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo = c.codCargo");
+                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo = c.codCargo"
+                + " WHERE f.localTrabalho = '"+localTrabalho+"'");
+            System.out.println(psQrFunc);
             resultQrFunc = psQrFunc.executeQuery();
         
             System.out.println(psQrFunc);

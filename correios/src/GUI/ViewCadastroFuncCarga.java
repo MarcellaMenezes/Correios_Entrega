@@ -5,6 +5,7 @@
  */
 package GUI;
 
+import DAO.FuncionarioDAO;
 import Model.Conexao;
 import Model.Endereco;
 import Model.FuncAgencia;
@@ -37,9 +38,12 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
     String tipoEdicao = "";
     PreparedStatement psQrFunc = null;
     ResultSet resultQrFunc = null;
+    FuncionarioDAO funcDao = null;
 
     public ViewCadastroFuncCarga() throws ParseException, SQLException {
         initComponents();
+        
+        funcDao = new FuncionarioDAO();
 
         MaskFormatter maskCPF = new MaskFormatter("###.###.###-##");
         MaskFormatter maskData = new MaskFormatter("##/##/####");
@@ -90,27 +94,21 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
             cpf = ftxtCPF.getText();
             cargo = cbxCargo.getItemAt(cbxCargo.getSelectedIndex());
 
-            funcionario = new FuncAgencia(cpf, nome, dataNascimento, sexo, 0, cargo);
-        }
-    }
+            funcionario = new FuncAgencia(0, cargo,"Carga",cpf, nome, dataNascimento, sexo);
 
-    public void dadosObjetoParaCampos() throws SQLException {
-        PreparedStatement psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
-                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo =" + funcionario.getCpf());
-        psQrFunc.setString(1, funcionario.getCargo());
-        ResultSet resultQrCargo = psQrFunc.executeQuery();
+        }
     }
 
     public void dadosLinhaParaCampos() {
         String cpf, nome, dataNasc, cargo, sexo;
-        if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
+        if (tblCadastroFuncCarga.getSelectedRow() != -1) {
 
-            cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
-            nome = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 1);
-            dataNasc = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 2);
+            cpf = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 0);
+            nome = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 1);
+            dataNasc = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 2);
             //System.out.println("Sexo :" + tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 3));
-            sexo = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 3);
-            cargo = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 4);
+            sexo = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 3);
+            cargo = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 4);
 
             ftxtCPF.setText(cpf);
             txtNome.setText(nome);
@@ -128,78 +126,36 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
     }
 
     public void carregarFuncionarios() throws SQLException {
-        psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
-                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo = c.codCargo");
-        resultQrFunc = psQrFunc.executeQuery();
-
         String[] colunas = {"CPF", "Nome", "Data Nascimento", "Sexo", "Cargo", "Codigo"};
         DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
-        while (resultQrFunc.next()) {
-            Object[] linha = {resultQrFunc.getString("cpf"),
-                resultQrFunc.getString("nome"),
-                resultQrFunc.getString("dataNasc"),
-                resultQrFunc.getString("sexo"),
-                resultQrFunc.getString("nomeCargo"),
-                resultQrFunc.getString("fk_Cargo_codCargo")
-            };
-            model.addRow(linha);
+        String localTrabalho = "Carga";
+        ArrayList<Object> funcionarios = funcDao.consulta(localTrabalho, "");
+        
+        for(Object funcionario : funcionarios){
+            model.addRow((Object[]) funcionario);
         }
-        tblCadastroFuncAgencia.setModel(model);
+        
+        tblCadastroFuncCarga.setModel(model);
     }
 
     public void cadastraFuncionario() throws SQLException {
 
         if (funcionario != null && tipoEdicao.equals("C")) {
-            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
-            psQrCargo.setString(1, funcionario.getCargo());
-            ResultSet resultQrCargo = psQrCargo.executeQuery();
-            
-            if (resultQrCargo.next()) {
-                System.out.println("Cargo cadastro func: "+resultQrCargo.getString("codCargo"));
-                psQrFunc = Conexao.getConexao().prepareStatement("INSERT INTO funcionario (cpf, nome, dataNascimento, sexo, fk_Cargo_codCargo) VALUES"
-                        + " ('" + funcionario.getCpf() + "','" + funcionario.getNome()
-                        + "','" + formtDataBD.format(funcionario.getDataNascimento())
-                        + "','" + funcionario.getSexo()
-                        + "'," + resultQrCargo.getString("codCargo") + ")");
-                System.out.println(psQrFunc);
-                psQrFunc.execute();
-            }
-        }
+            funcDao.adiciona(funcionario, "");
+        } 
     }
 
     public void editarFuncionario() throws SQLException {
-        if (funcionario != null && tipoEdicao.equals("E")) {
-            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
-            psQrCargo.setString(1, funcionario.getCargo());
-            ResultSet resultQrCargo = psQrCargo.executeQuery();
-            
-            System.out.println("Cargo objeto: "+funcionario.getCargo());
-       
-            if (resultQrCargo.next()) {
-                //String sexo = Character.toString(funcionario.getSexo());
-                psQrFunc = Conexao.getConexao().prepareStatement("UPDATE funcionario SET"
-                        + " nome = '" + funcionario.getNome()+"'"
-                        + " , dataNascimento = '" + formtDataBD.format(funcionario.getDataNascimento())+"'"
-                        + " , sexo = '" +funcionario.getSexo() + "'"
-                        + ", fk_Cargo_codCargo = " + "'"+resultQrCargo.getString("codCargo")+"'"
-                        + " WHERE cpf = '" +funcionario.getCpf()+"'");
-
-                System.out.println(psQrFunc);
-                psQrFunc. executeUpdate();     
-            }
+        if (funcionario != null && tipoEdicao.equals("E")){
+            funcDao.altera(funcionario, "");
         }
-
     }
-    
+
     public void excluirFuncionario() throws SQLException{
         
-        if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
-
-            String cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
-            psQrFunc = Conexao.getConexao().prepareStatement("DELETE FROM funcionario WHERE cpf ='"+cpf+"'");
-            System.out.println(psQrFunc);
-            psQrFunc.execute();
-           
+        if (tblCadastroFuncCarga.getSelectedRow() != -1) {
+            String cpf = (String) tblCadastroFuncCarga.getValueAt(tblCadastroFuncCarga.getSelectedRow(), 0);
+            funcDao.exclui(cpf);  
         } else {
             JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
         }
@@ -280,7 +236,7 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
         pnlHead = new javax.swing.JPanel();
         lblLogo = new javax.swing.JLabel();
         pnlBody = new javax.swing.JPanel();
-        lblAgencia = new javax.swing.JLabel();
+        lblCarga = new javax.swing.JLabel();
         lblObservacao = new javax.swing.JLabel();
         ftxtCPF = new javax.swing.JFormattedTextField();
         txtNome = new javax.swing.JTextField();
@@ -291,12 +247,13 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
         cbxCargo = new javax.swing.JComboBox<>();
         lblCargo = new javax.swing.JLabel();
         spnlTabela = new javax.swing.JScrollPane();
-        tblCadastroFuncAgencia = new javax.swing.JTable();
+        tblCadastroFuncCarga = new javax.swing.JTable();
         btnCadastrar = new javax.swing.JButton();
         btnEditar = new javax.swing.JButton();
         btnExcluir = new javax.swing.JButton();
         btnCancelar = new javax.swing.JButton();
         btnSalvar = new javax.swing.JButton();
+        btnVoltar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -322,10 +279,10 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
                 .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        lblAgencia.setFont(new java.awt.Font("Arial", 0, 22)); // NOI18N
-        lblAgencia.setForeground(new java.awt.Color(0, 51, 153));
-        lblAgencia.setText("Cadastro Funcionário da Agência");
-        lblAgencia.setAlignmentX(0.5F);
+        lblCarga.setFont(new java.awt.Font("Arial", 0, 22)); // NOI18N
+        lblCarga.setForeground(new java.awt.Color(0, 51, 153));
+        lblCarga.setText("Cadastro Funcionário de Carga");
+        lblCarga.setAlignmentX(0.5F);
 
         lblObservacao.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblObservacao.setForeground(new java.awt.Color(51, 102, 255));
@@ -355,7 +312,7 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
         lblCargo.setFont(new java.awt.Font("Arial", 0, 14)); // NOI18N
         lblCargo.setText("Cargo: *");
 
-        tblCadastroFuncAgencia.setModel(new javax.swing.table.DefaultTableModel(
+        tblCadastroFuncCarga.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {},
                 {},
@@ -366,7 +323,7 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
 
             }
         ));
-        spnlTabela.setViewportView(tblCadastroFuncAgencia);
+        spnlTabela.setViewportView(tblCadastroFuncCarga);
 
         btnCadastrar.setText("Cadastrar");
         btnCadastrar.addActionListener(new java.awt.event.ActionListener() {
@@ -398,6 +355,13 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
             }
         });
 
+        btnVoltar.setText("Voltar");
+        btnVoltar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnVoltarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout pnlBodyLayout = new javax.swing.GroupLayout(pnlBody);
         pnlBody.setLayout(pnlBodyLayout);
         pnlBodyLayout.setHorizontalGroup(
@@ -410,7 +374,7 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
                 .addGap(22, 22, 22)
                 .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(pnlBodyLayout.createSequentialGroup()
-                        .addComponent(lblAgencia, javax.swing.GroupLayout.PREFERRED_SIZE, 691, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblCarga, javax.swing.GroupLayout.PREFERRED_SIZE, 691, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(pnlBodyLayout.createSequentialGroup()
                         .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
@@ -439,16 +403,17 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
                             .addComponent(btnEditar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(pnlBodyLayout.createSequentialGroup()
                                 .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(btnVoltar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(btnSalvar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(btnCancelar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(btnExcluir, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(btnExcluir, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 112, Short.MAX_VALUE))
                                 .addGap(0, 0, Short.MAX_VALUE))))))
         );
         pnlBodyLayout.setVerticalGroup(
             pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlBodyLayout.createSequentialGroup()
                 .addGap(12, 12, 12)
-                .addComponent(lblAgencia)
+                .addComponent(lblCarga)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(pnlBodyLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(pnlBodyLayout.createSequentialGroup()
@@ -483,7 +448,8 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
                         .addComponent(btnCancelar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnSalvar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnVoltar, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
 
@@ -565,6 +531,12 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnExcluirActionPerformed
 
+    private void btnVoltarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVoltarActionPerformed
+       this.dispose();
+        ViewHomeFuncionario vHomeFunc = new ViewHomeFuncionario();
+        vHomeFunc.setVisible(true);
+    }//GEN-LAST:event_btnVoltarActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -575,10 +547,11 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnExcluir;
     private javax.swing.JButton btnSalvar;
+    private javax.swing.JButton btnVoltar;
     private javax.swing.JComboBox<String> cbxCargo;
     private javax.swing.JFormattedTextField ftxtCPF;
     private javax.swing.JFormattedTextField ftxtDataNasc;
-    private javax.swing.JLabel lblAgencia;
+    private javax.swing.JLabel lblCarga;
     private javax.swing.JLabel lblCargo;
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblObservacao;
@@ -588,7 +561,7 @@ public class ViewCadastroFuncCarga extends javax.swing.JFrame {
     private javax.swing.JRadioButton rbtnFeminino;
     private javax.swing.JRadioButton rbtnMasculino;
     private javax.swing.JScrollPane spnlTabela;
-    private javax.swing.JTable tblCadastroFuncAgencia;
+    private javax.swing.JTable tblCadastroFuncCarga;
     private javax.swing.JTextField txtNome;
     // End of variables declaration//GEN-END:variables
 }

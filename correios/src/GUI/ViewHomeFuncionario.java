@@ -169,6 +169,7 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
         ViewCadastroFuncAgencia vcadastroFuncAgencia = null;
         try {
             vcadastroFuncAgencia = new ViewCadastroFuncAgencia();
+            this.dispose();
         } catch (ParseException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SQLException ex) {
@@ -186,6 +187,7 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
         
         try {
             vcadastroFuncCarga = new ViewCadastroFuncCarga();
+            this.dispose();
         } catch (ParseException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SQLException ex) {
@@ -208,6 +210,7 @@ public class ViewHomeFuncionario extends javax.swing.JFrame {
       
         try {
             vcadastroFuncCee = new ViewCadastroFuncCEE();
+            this.dispose();
         } catch (ParseException ex) {
             Logger.getLogger(ViewHomeFuncionario.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SQLException ex) {
