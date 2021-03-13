@@ -1,13 +1,16 @@
 package GUI;
 
-import Classes.Conexao;
-import Classes.Endereco;
+import DAO.EnderecoDAO;
+import Model.Conexao;
+import Model.Endereco;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.table.DefaultTableModel;
@@ -16,41 +19,25 @@ public class ViewEndereco extends javax.swing.JFrame {
     PreparedStatement psQrEnd = null;
     ResultSet resultQrEnd = null;
     String cpfCli = null;
+    EnderecoDAO endDao = null;
     
     
     ViewEndereco(String cpfCli) throws SQLException {
         initComponents();
         this.cpfCli = cpfCli;
+        endDao = new EnderecoDAO();
         carregarEnderecos();
+        
         System.out.println("Cpf no Endereco:"+this.cpfCli);
     }
     
     public void carregarEnderecos() throws SQLException {
-        System.out.println("Cpf no metodos: "+cpfCli);
-        psQrEnd = Conexao.getConexao().prepareStatement("SELECT * FROM endereco AS e "
-                + " INNER JOIN endereco_cliente AS ec on e.codEndereco = ec.fk_Endereco_codEndereco"
-                + " INNER JOIN cliente AS c on c.cpf = ec.fk_Cliente_cpf"
-                + " WHERE c.cpf = '"+cpfCli+"'");
-        resultQrEnd = psQrEnd.executeQuery();
-        
-         System.out.println(psQrEnd);
-
         String [] colunas = {"Identificação","País", "CEP", "Rua", "Número", "Complemento", "Bairro", "Cidade", "UF"};
         DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
+        ArrayList<Object> enderecos = endDao.consulta(cpfCli, "");
         
-        while (resultQrEnd.next()) {
-            Object[] linha = {
-                resultQrEnd.getString("identificacao"),
-                resultQrEnd.getString("pais"),
-                resultQrEnd.getString("cep"),
-                resultQrEnd.getString("rua"),
-                resultQrEnd.getString("numero"),
-                resultQrEnd.getString("complemento"),
-                resultQrEnd.getString("bairro"),
-                resultQrEnd.getString("cidade"),
-                resultQrEnd.getString("uf")
-            };
-            model.addRow(linha);
+        for(Object endereco : enderecos){
+            model.addRow((Object[]) endereco);
         }
         tblEndereco.setModel(model);
     }

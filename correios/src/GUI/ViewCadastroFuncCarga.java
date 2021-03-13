@@ -5,12 +5,12 @@
  */
 package GUI;
 
-import Classes.Conexao;
-import Classes.Endereco;
-import Classes.FuncAgencia;
-import Classes.FuncCEE;
-import Classes.FuncCarga;
-import Classes.Funcionario;
+import Model.Conexao;
+import Model.Endereco;
+import Model.FuncAgencia;
+import Model.FuncCEE;
+import Model.FuncCarga;
+import Model.Funcionario;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

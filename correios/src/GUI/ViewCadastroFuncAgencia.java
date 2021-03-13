@@ -5,12 +5,13 @@
  */
 package GUI;
 
-import Classes.Conexao;
-import Classes.Endereco;
-import Classes.FuncAgencia;
-import Classes.FuncCEE;
-import Classes.FuncCarga;
-import Classes.Funcionario;
+import DAO.FuncionarioDAO;
+import Model.Conexao;
+import Model.Endereco;
+import Model.FuncAgencia;
+import Model.FuncCEE;
+import Model.FuncCarga;
+import Model.Funcionario;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,9 +38,12 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
     String tipoEdicao = "";
     PreparedStatement psQrFunc = null;
     ResultSet resultQrFunc = null;
+    FuncionarioDAO funcDao = null;
 
     public ViewCadastroFuncAgencia() throws ParseException, SQLException {
         initComponents();
+        
+        funcDao = new FuncionarioDAO();
 
         MaskFormatter maskCPF = new MaskFormatter("###.###.###-##");
         MaskFormatter maskData = new MaskFormatter("##/##/####");
@@ -94,13 +98,6 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
         }
     }
 
-    public void dadosObjetoParaCampos() throws SQLException {
-        PreparedStatement psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
-                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo =" + funcionario.getCpf());
-        psQrFunc.setString(1, funcionario.getCargo());
-        ResultSet resultQrCargo = psQrFunc.executeQuery();
-    }
-
     public void dadosLinhaParaCampos() {
         String cpf, nome, dataNasc, cargo, sexo;
         if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
@@ -128,78 +125,36 @@ public class ViewCadastroFuncAgencia extends javax.swing.JFrame {
     }
 
     public void carregarFuncionarios() throws SQLException {
-        psQrFunc = Conexao.getConexao().prepareStatement("SELECT f.cpf, f.nome, date_format(f.dataNascimento,'%d/%m/%Y') As dataNasc , f.sexo, f.fk_Cargo_codCargo, c.nomeCargo FROM funcionario AS f"
-                + " INNER JOIN cargo AS c on f.fk_Cargo_codCargo = c.codCargo");
-        resultQrFunc = psQrFunc.executeQuery();
-
         String[] colunas = {"CPF", "Nome", "Data Nascimento", "Sexo", "Cargo", "Codigo"};
         DefaultTableModel model = new DefaultTableModel(colunas, 0); //1º linha 
-        while (resultQrFunc.next()) {
-            Object[] linha = {resultQrFunc.getString("cpf"),
-                resultQrFunc.getString("nome"),
-                resultQrFunc.getString("dataNasc"),
-                resultQrFunc.getString("sexo"),
-                resultQrFunc.getString("nomeCargo"),
-                resultQrFunc.getString("fk_Cargo_codCargo")
-            };
-            model.addRow(linha);
+        String localTrabalho = "FuncAgencia";
+        ArrayList<Object> funcionarios = funcDao.consulta(localTrabalho, "");
+        
+        for(Object funcionario : funcionarios){
+            model.addRow((Object[]) funcionario);
         }
+        
         tblCadastroFuncAgencia.setModel(model);
     }
 
     public void cadastraFuncionario() throws SQLException {
 
         if (funcionario != null && tipoEdicao.equals("C")) {
-            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
-            psQrCargo.setString(1, funcionario.getCargo());
-            ResultSet resultQrCargo = psQrCargo.executeQuery();
-            
-            if (resultQrCargo.next()) {
-                System.out.println("Cargo cadastro func: "+resultQrCargo.getString("codCargo"));
-                psQrFunc = Conexao.getConexao().prepareStatement("INSERT INTO funcionario (cpf, nome, dataNascimento, sexo, fk_Cargo_codCargo) VALUES"
-                        + " ('" + funcionario.getCpf() + "','" + funcionario.getNome()
-                        + "','" + formtDataBD.format(funcionario.getDataNascimento())
-                        + "','" + funcionario.getSexo()
-                        + "'," + resultQrCargo.getString("codCargo") + ")");
-                System.out.println(psQrFunc);
-                psQrFunc.execute();
-            }
-        }
+            funcDao.adiciona(funcionario, "");
+        } 
     }
 
     public void editarFuncionario() throws SQLException {
-        if (funcionario != null && tipoEdicao.equals("E")) {
-            PreparedStatement psQrCargo = Conexao.getConexao().prepareStatement("SELECT codCargo FROM cargo WHERE nomeCargo = ?");
-            psQrCargo.setString(1, funcionario.getCargo());
-            ResultSet resultQrCargo = psQrCargo.executeQuery();
-            
-            System.out.println("Cargo objeto: "+funcionario.getCargo());
-       
-            if (resultQrCargo.next()) {
-                //String sexo = Character.toString(funcionario.getSexo());
-                psQrFunc = Conexao.getConexao().prepareStatement("UPDATE funcionario SET"
-                        + " nome = '" + funcionario.getNome()+"'"
-                        + " , dataNascimento = '" + formtDataBD.format(funcionario.getDataNascimento())+"'"
-                        + " , sexo = '" +funcionario.getSexo() + "'"
-                        + ", fk_Cargo_codCargo = " + "'"+resultQrCargo.getString("codCargo")+"'"
-                        + " WHERE cpf = '" +funcionario.getCpf()+"'");
-
-                System.out.println(psQrFunc);
-                psQrFunc. executeUpdate();     
-            }
+        if (funcionario != null && tipoEdicao.equals("E")){
+            funcDao.altera(funcionario, "");
         }
-
     }
-    
+
     public void excluirFuncionario() throws SQLException{
         
         if (tblCadastroFuncAgencia.getSelectedRow() != -1) {
-
             String cpf = (String) tblCadastroFuncAgencia.getValueAt(tblCadastroFuncAgencia.getSelectedRow(), 0);
-            psQrFunc = Conexao.getConexao().prepareStatement("DELETE FROM funcionario WHERE cpf ='"+cpf+"'");
-            System.out.println(psQrFunc);
-            psQrFunc.execute();
-           
+            funcDao.exclui(cpf);  
         } else {
             JOptionPane.showMessageDialog(rootPane, "Selecione algum funcionario");
         }

@@ -1,6 +1,6 @@
 package GUI;
 
-import Classes.Cliente;
+import Model.Cliente;
 import java.awt.Color;
 import java.sql.SQLException;
 import java.text.ParseException;

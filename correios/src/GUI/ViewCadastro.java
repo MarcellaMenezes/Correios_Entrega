@@ -1,10 +1,10 @@
 package GUI;
 
-import Classes.Cliente;
-import Classes.Conexao;
-import Classes.Endereco;
-import Classes.Login;
-import Classes.Usuario;
+import Model.Cliente;
+import Model.Conexao;
+import Model.Endereco;
+import Model.Login;
+import Model.Usuario;
 import java.awt.Color;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

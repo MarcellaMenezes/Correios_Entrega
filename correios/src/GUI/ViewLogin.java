@@ -1,14 +1,16 @@
 package GUI;
 
-import Classes.Cliente;
-import Classes.Conexao;
-import Classes.Login;
+import DAO.LoginDAO;
+import Model.Cliente;
+import Model.Conexao;
+import Model.Login;
 import java.awt.Color;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,6 +20,7 @@ import javax.swing.text.MaskFormatter;
 public class ViewLogin extends javax.swing.JFrame {
 
     private String cpfCli = null;
+    LoginDAO loginDao = null;
     List<Login> logins;
     Cliente client = null;
     PreparedStatement psQrCli = null, psQrAdm = null;
@@ -29,6 +32,7 @@ public class ViewLogin extends javax.swing.JFrame {
      */
     public ViewLogin() {
         initComponents();
+        loginDao = new LoginDAO();
         lblCadastrar.setText("<html><u>Cadastrar</u>");
 
     }
@@ -43,6 +47,9 @@ public class ViewLogin extends javax.swing.JFrame {
     public void verificaLogin() throws SQLException {
         String email = txtEmail.getText();
         String senha = new String(pwdSenha.getPassword());
+        
+        ArrayList<Object> loginResultado = null;
+        Login login = null;
 
         if (email.isEmpty() && senha.isEmpty()) {
             JOptionPane.showMessageDialog(rootPane, "Inisira seu e-mail e sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
@@ -54,35 +61,36 @@ public class ViewLogin extends javax.swing.JFrame {
             pwdSenha.requestFocus();
             JOptionPane.showMessageDialog(rootPane, "Insira sua senha", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
         } else {
-
-            //verificando primeiro se o login é de um cliente
-            psQrCli = Conexao.getConexao().prepareStatement("SELECT l.codLogin, lc.fk_Cliente_cpf FROM login AS l"
-                    + " INNER JOIN login_cliente AS lc on l.codLogin = lc.fk_Login_codLogin WHERE l.senha = ? AND l.email = ?");
-            psQrCli.setString(1, senha);
-            psQrCli.setString(2, email);
-            resultQrCli = psQrCli.executeQuery();
-
+            
+            login = new Login(email, senha);          
             //se existe cliente, pode abrir a tela de cliente
-            if (resultQrCli.next()) {
-                cpfCli = resultQrCli.getString("fk_Cliente_cpf");
-                qualTela = "viewHome";
-                System.out.println("Login: " + resultQrCli.getString("codLogin") + " Cpf Cliente: " + cpfCli);
-            } //senão, verifica se existe adm
-            else {
-                psQrAdm = Conexao.getConexao().prepareStatement("SELECT l.codLogin, c.nomeCargo FROM login as l "
-                        + "INNER JOIN login_funcionario as lf on l.codLogin = lf.fk_Login_codLogin "
-                        + "INNER JOIN funcionario as f on f.cpf = lf.fk_Funcionario_cpf "
-                        + "INNER JOIN cargo as c on f.fk_Cargo_codCargo = c.codCargo"
-                        + " WHERE l.senha = ? AND l.email = ?");
-                psQrAdm.setString(1, senha);
-                psQrAdm.setString(2, email);
-                resultQrAdm = psQrAdm.executeQuery();
+            loginResultado = loginDao.consulta(login, "Cliente");
+            System.out.println("Login Resultado: "+loginResultado);
+            if(loginResultado.size()>0){
+                for (Object conta : loginResultado ) {  
+                    Object resultado[] = (Object[]) conta;  // 0 = codLogin, 1 = fk_Cliente_cpf
+                    cpfCli = (String) resultado[1];
+                    qualTela = "viewHome";
+                    System.out.println("Cod Login: " + resultado[0] + " Cpf Cliente: " + cpfCli);
+                }
+            }else { //senão, verifica se existe adm  
                 //se existe adm, abre a tela de admn
-                if (resultQrAdm.next()) {
-                    //System.out.println("Login: " + resultQrAdm.getString("codLogin") + "Nome Cargo: " + resultQrAdm.getString("nomeCargo"));
-                    if (resultQrAdm.getString("nomeCargo").equals("Administrador")) {
-                        qualTela = "viewHomeFuncionario";
+                loginResultado = loginDao.consulta(login, "Administrador");
+                System.out.println("Login Resultado: "+loginResultado);
+                if(loginResultado!=null){
+                    System.out.println("entrou if adm");
+                    for (Object conta : loginResultado ) {                
+                        Object resultado[] = (Object[]) conta;  // 0 = codLogin, 1 = nomeCargo
+                        String nomeCargo = (String) resultado[1];
+                        if(nomeCargo.equals("Administrador")){
+                            qualTela = "viewHomeFuncionario";
+                            System.out.println("Cod Login: " + resultado[0] + " Nome Cargo: " + resultado[1]);
+                        }else{
+                            JOptionPane.showMessageDialog(rootPane, "Você não é um Administrador", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
+                        }  
                     }
+                }else{
+                    JOptionPane.showMessageDialog(rootPane, "Login não existe", "Credenciais Inválidas", JOptionPane.ERROR_MESSAGE);
                 }
             }
 
@@ -230,8 +238,8 @@ public class ViewLogin extends javax.swing.JFrame {
         }
         if (qualTela != null) {
             if (qualTela.equals("viewHome")) {
-                ViewHome vHome = null;
-                vHome = new ViewHome(cpfCli);
+                ViewHomeCliente vHome = null;
+                vHome = new ViewHomeCliente(cpfCli);
                 vHome.setVisible(true);
                 this.dispose();
             } else if (qualTela.equals("viewHomeFuncionario")) {

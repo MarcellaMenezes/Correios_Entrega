@@ -5,9 +5,10 @@
  */
 package GUI;
 
-import Classes.Cliente;
-import Classes.Conexao;
-import Classes.Endereco;
+import DAO.EnderecoDAO;
+import Model.Cliente;
+import Model.Conexao;
+import Model.Endereco;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,10 +24,12 @@ import javax.swing.text.MaskFormatter;
  * @author marce
  */
 public class ViewCadastroEndereco extends javax.swing.JFrame {
+   EnderecoDAO enderecoDao = null;
    Endereco endereco;
    String cpf;
     public ViewCadastroEndereco(String cpf) throws ParseException {
         initComponents();
+        enderecoDao = new EnderecoDAO();
         MaskFormatter maskCEP = new MaskFormatter("#####-###");
         this.cpf = cpf;
         maskCEP.install(ftxtCEP);   
@@ -74,39 +77,7 @@ public class ViewCadastroEndereco extends javax.swing.JFrame {
 
     public void cadastraEndereco() throws SQLException{
         if (endereco != null) {
-            PreparedStatement psQrE = Conexao.getConexao().prepareStatement("INSERT INTO endereco ( identificacao, pais, cep, rua, numero, complemento, bairro, cidade, uf) VALUES"
-                    + " ('" + endereco.getIdentificacaoEndereco()
-                    + "','" + endereco.getPais()
-                    + "','" + endereco.getCep()
-                    + "','" + endereco.getRua()
-                    + "','" + endereco.getNumero()
-                    + "','" + endereco.getComplemento()
-                    + "','" + endereco.getBairro()
-                    + "','" + endereco.getCidade()
-                    + "','" + endereco.getUf()+"')");
-            System.out.println(psQrE);
-            psQrE.execute();    
-            
-            PreparedStatement psQrEnd = Conexao.getConexao().prepareStatement("SELECT codEndereco FROM endereco WHERE "
-                    + "identificacao = ? and pais = ? and cep = ? and rua = ? and numero = ? and complemento = ? and bairro = ? and cidade = ? and uf = ?");
-            psQrEnd.setString(1, endereco.getIdentificacaoEndereco());
-            psQrEnd.setString(2, endereco.getPais() );
-            psQrEnd.setString(3, endereco.getCep() );
-            psQrEnd.setString(4, endereco.getRua());
-            psQrEnd.setInt(5, endereco.getNumero());
-            psQrEnd.setString(6, endereco.getComplemento());
-            psQrEnd.setString(7, endereco.getBairro());
-            psQrEnd.setString(8, endereco.getCidade());
-            psQrEnd.setString(9, endereco.getUf());
-            ResultSet resultQrEnd = psQrEnd.executeQuery();
-            
-            if (resultQrEnd.next()) {
-                PreparedStatement psQrEC = Conexao.getConexao().prepareStatement("INSERT INTO endereco_cliente (fk_Endereco_codEndereco, fk_Cliente_cpf) VALUES"
-                         + " ('" +resultQrEnd.getString("codEndereco")
-                         + "','" + cpf+"')");
-                 System.out.println(psQrEC);
-                 psQrEC.execute();
-            }
+            enderecoDao.adiciona(endereco, cpf);
         }
     }
     @SuppressWarnings("unchecked")
