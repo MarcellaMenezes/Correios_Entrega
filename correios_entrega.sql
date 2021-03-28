@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: 13-Mar-2021 às 23:43
+-- Generation Time: 28-Mar-2021 às 09:20
 -- Versão do servidor: 10.1.32-MariaDB
 -- PHP Version: 5.6.36
 
@@ -68,6 +68,7 @@ INSERT INTO `cliente` (`cpf`, `nome`, `dataNascimento`, `sexo`) VALUES
 ('649.308.770-83', 'Gustavo', '2001-01-21', 'M'),
 ('674.706.410-09', 'Angela', '1980-10-11', 'F'),
 ('676.651.840-57', 'Livia', '2007-05-03', 'F'),
+('755.877.340-72', 'Juliana', '1998-10-11', 'F'),
 ('808.943.870-90', 'Dani', '1981-10-10', 'F'),
 ('843.870.180-97', 'Mara', '1998-10-11', 'F');
 
@@ -108,7 +109,11 @@ INSERT INTO `endereco` (`codEndereco`, `pais`, `cep`, `rua`, `numero`, `compleme
 (11, 'Chile', '55555-555', 'R', 5, '', 'B', 'C', 'Bahia (BA)', 'Casa'),
 (12, 'Equador', '44444-444', 'R', 2, '', 'B', 'C', 'Amazonas (AM)', 'Casa'),
 (13, 'Argentina', '77777-777', 'R', 7, '', 'B', 'C', 'Acre (AC)', 'Casa'),
-(14, 'Colômbia', '55555-555', 'R', 5, 'C', 'B', 'C', 'Amapá (AP)', 'Trabalho');
+(14, 'Colômbia', '55555-555', 'R', 5, 'C', 'B', 'C', 'Amapá (AP)', 'Trabalho'),
+(15, 'Argentina', '33333-333', 'R', 3, 'C', 'B', 'C', 'Acre (AC)', 'Casa'),
+(16, 'Argentina', '44444-444', 'R', 4, 'C', 'B', 'C', 'Acre (AC)', 'Trabalho'),
+(17, 'Argentina', '55555-555', 'R', 5, 'C', 'B', 'C', 'Acre (AC)', 'Avó'),
+(18, 'Argentina', '11111-111', 'R', 1, 'C', 'B', 'C', 'Acre (AC)', 'Serviço');
 
 -- --------------------------------------------------------
 
@@ -137,7 +142,11 @@ INSERT INTO `endereco_cliente` (`fk_Endereco_codEndereco`, `fk_Cliente_cpf`) VAL
 (11, '808.943.870-90'),
 (12, '192.484.020-03'),
 (13, '676.651.840-57'),
-(14, '676.651.840-57');
+(14, '676.651.840-57'),
+(15, '755.877.340-72'),
+(5, '755.877.340-72'),
+(17, '755.877.340-72'),
+(18, '755.877.340-72');
 
 -- --------------------------------------------------------
 
@@ -161,10 +170,11 @@ CREATE TABLE `funcionario` (
 INSERT INTO `funcionario` (`cpf`, `nome`, `dataNascimento`, `sexo`, `fk_Cargo_codCargo`, `localTrabalho`) VALUES
 ('035.325.330-81', 'Root', '1993-02-01', 'F', 1, ''),
 ('117.119.840-00', 'Alysson', '1997-10-11', 'M', 3, 'Carga'),
+('469.335.410-45', 'Esteh', '1998-10-11', '1', 1, 'CEE'),
 ('555.111.430-90', 'Mel', '1998-10-11', 'F', 1, 'CEE'),
-('602.443.770-65', 'Augusta', '1988-10-11', 'F', 2, 'CEE'),
-('663.938.290-36', 'Marcelino', '1972-02-29', 'M', 1, 'Agencia'),
-('728.377.930-27', 'Lucas Oliveira', '1997-10-12', 'M', 2, 'Agencia');
+('663.938.290-36', 'Marcelino J', '1972-02-29', '2', 1, 'Agencia'),
+('724.214.130-36', 'Icaro I', '1998-10-11', '1', 1, 'Agencia'),
+('728.377.930-27', 'Lucas Oliveira ', '1997-10-12', '1', 2, 'Agencia');
 
 -- --------------------------------------------------------
 
@@ -217,7 +227,8 @@ INSERT INTO `login` (`codLogin`, `senha`, `email`) VALUES
 (27, '1234', 'gusta@'),
 (28, '1234', 'dani@'),
 (29, '1234', 'lucrecia@'),
-(30, '1234', 'livia@');
+(30, '1234', 'livia@'),
+(34, '1234', 'juliana@');
 
 -- --------------------------------------------------------
 
@@ -244,7 +255,11 @@ INSERT INTO `login_cliente` (`fk_Cliente_cpf`, `fk_Login_codLogin`) VALUES
 ('649.308.770-83', 27),
 ('808.943.870-90', 28),
 ('192.484.020-03', 29),
-('676.651.840-57', 30);
+('676.651.840-57', 30),
+(NULL, NULL),
+(NULL, NULL),
+(NULL, NULL),
+('755.877.340-72', 34);
 
 -- --------------------------------------------------------
 
@@ -413,7 +428,7 @@ ALTER TABLE `cargo`
 -- AUTO_INCREMENT for table `endereco`
 --
 ALTER TABLE `endereco`
-  MODIFY `codEndereco` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `codEndereco` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `localizacao`
@@ -425,7 +440,7 @@ ALTER TABLE `localizacao`
 -- AUTO_INCREMENT for table `login`
 --
 ALTER TABLE `login`
-  MODIFY `codLogin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `codLogin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `objeto`
